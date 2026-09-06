@@ -33,12 +33,18 @@ Skills in `~/.claude/skills/` load in every project.
 
 ## statusline-usage-limits
 
+The skill contributes one line, appended below whatever your status line already
+prints:
+
 ```
-Opus 5 (high) | ~/repos/api | main | ctx:31%
 5h:82% | 7d:41% | fable:57% | credits:25%
 ```
 
 Green below 70%, amber 70–89%, red at 90% and above.
+
+`5h` is the 5-hour session window, `7d` the weekly all-models window, `fable`
+a per-model weekly window (you get one segment per window your plan has), and
+`credits` your usage-credit balance.
 
 ### Why it exists
 
@@ -57,9 +63,18 @@ nothing is added to the time it takes a prompt to draw.
 plugins/statusline-usage-limits/skills/statusline-usage-limits/scripts/install.sh
 ```
 
-With no status line configured, it writes one and registers it. With a status
-line already present it prints the two lines to add and changes nothing — a
-hand-written status line offers no safe insertion point to guess at.
+With a status line already present, it prints the two lines to add and changes
+nothing — a hand-written status line offers no safe insertion point to guess at.
+
+With no status line configured, it writes a plain one so there is something to
+attach to, giving you both rows:
+
+```
+Opus 5 | ~/repos/api | ctx:31%
+5h:82% | 7d:41% | fable:57% | credits:25%
+```
+
+Only the second row comes from this skill. Replace the first with your own.
 
 To wire it in by hand, from any status line in any language:
 
