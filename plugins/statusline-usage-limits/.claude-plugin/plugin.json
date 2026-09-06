@@ -1,7 +1,7 @@
 {
   "name": "statusline-usage-limits",
   "description": "Show plan usage in the Claude Code status line: the 5-hour window, the weekly window, each per-model weekly window, and the usage-credit balance, coloured by how close each is to its limit.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": {
     "name": "Amit Edelshtein",
     "url": "https://github.com/LoremFooBar"
