@@ -15,13 +15,48 @@ tmp=$(mktemp "${cache}.XXXXXX") || exit 0
 trap 'rm -f "$tmp"' EXIT
 
 read_token() {
-  # Linux and WSL keep the credentials in a file; macOS keeps them in the Keychain.
-  if [ -r "$HOME/.claude/.credentials.json" ]; then
-    python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["claudeAiOauth"]["accessToken"])' \
-      "$HOME/.claude/.credentials.json" 2>/dev/null && return 0
-  fi
-  security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null |
-    python3 -c 'import sys,json; print(json.load(sys.stdin)["claudeAiOauth"]["accessToken"])' 2>/dev/null
+  # An expired token is answered with 429, not 401, so an unchecked stale
+  # credential freezes the cache silently instead of failing loudly. macOS keeps
+  # the live credential in the Keychain; a leftover .credentials.json can sit
+  # months out of date beside it.
+  python3 - "$HOME/.claude/.credentials.json" <<'CREDS'
+import json, subprocess, sys, time
+
+
+def token(raw):
+    try:
+        oauth = json.loads(raw)["claudeAiOauth"]
+    except Exception:
+        return None
+    if oauth.get("expiresAt", 0) / 1000 <= time.time():
+        return None
+    return oauth.get("accessToken")
+
+
+def keychain():
+    try:
+        return subprocess.run(
+            ["security", "find-generic-password", "-s", "Claude Code-credentials", "-w"],
+            capture_output=True, text=True, timeout=5,
+        ).stdout
+    except Exception:
+        return ""
+
+
+def credentials_file():
+    try:
+        with open(sys.argv[1]) as fh:
+            return fh.read()
+    except Exception:
+        return ""
+
+
+for raw in (keychain(), credentials_file()):
+    found = token(raw)
+    if found:
+        print(found)
+        break
+CREDS
 }
 
 token=$(read_token)

@@ -74,6 +74,9 @@ bash scripts/usage-refresh.sh && jq . ~/.claude/cache/usage.json
 
 - **Every segment missing** - the token could not be read, or the fetch failed.
   Both cases exit 0 by design; the foreground run shows why.
+- **Numbers frozen at an old value** - a stale credential. The endpoint answers
+  an expired token with 429, not 401, so the fetch fails and leaves the previous
+  cache in place. `curl -D- ... | grep HTTP/` against the endpoint shows it.
 - **Only `credits` missing** - `extra_usage` is `null`. Accounts without usage
   credits have no balance to show. Adding `skip_spend=1` to the request also
   nulls it, so check the URL has not picked that parameter up.
