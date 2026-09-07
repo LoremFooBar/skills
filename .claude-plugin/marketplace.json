@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "lorem-foo-skills",
-      "description": "Show plan usage in the Claude Code status line: the 5-hour window, the weekly window, each per-model weekly window, and the usage-credit balance, coloured by how close each is to its limit.",
+      "description": "Plan-usage tools for Claude Code: show the 5-hour, weekly, per-model and credit windows in the status line, and run long token-hungry work in stages that pause and stop by those same limits.",
       "source": "./plugins/lorem-foo-skills",
       "category": "productivity"
     }
