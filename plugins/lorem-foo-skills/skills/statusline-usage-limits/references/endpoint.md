@@ -62,6 +62,7 @@ Windows that do not apply to the account come back `null`: `seven_day_opus`,
 | `7d` | `.seven_day.utilization` |
 | per-model | `.limits[] \| select(.kind=="weekly_scoped") \| .percent`, labelled from `.scope.model.display_name` |
 | `credits` | `.extra_usage.utilization` |
+| `5h` countdown | `.five_hour.resets_at`, minus the current time |
 
 Per-model segments are emitted for every `weekly_scoped` entry, so an account
 with an Opus or Sonnet window gets those without a code change.
@@ -76,7 +77,8 @@ The payload is built by hand and carries at most three windows:
   ...isGateway  && overage && { spend_limit: { used_percentage: overage.utilization*100 } } }
 ```
 
-`spend_limit` is the overage window and appears only behind a Claude gateway, so
-a normal subscription never sees it. Per-model windows exist internally as
+No reset time is passed through, so the countdown beside `5h` stays hidden until
+the first fetch lands. `spend_limit` is the overage window and appears only
+behind a Claude gateway, so a normal subscription never sees it. Per-model windows exist internally as
 `rate_limits.model_scoped[]` but are not passed through. `usage-segments.sh`
 falls back to this payload only until the first fetch lands.

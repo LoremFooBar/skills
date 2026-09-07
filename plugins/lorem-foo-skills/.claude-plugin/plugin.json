@@ -1,7 +1,7 @@
 {
   "name": "lorem-foo-skills",
   "description": "Plan-usage tools for Claude Code: show the 5-hour, weekly, per-model and credit windows in the status line, and run long token-hungry work in stages that pause and stop by those same limits.",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "author": {
     "name": "Amit Edelshtein",
     "url": "https://github.com/LoremFooBar"

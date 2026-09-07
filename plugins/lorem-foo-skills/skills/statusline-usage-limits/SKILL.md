@@ -1,6 +1,6 @@
 ---
 name: statusline-usage-limits
-description: Show Claude Code plan usage in the status line - the 5-hour session window, the weekly all-models window, each per-model weekly window (Fable, Opus, Sonnet), and the usage-credit balance - each coloured green, amber or red by how close it is to its limit. Use when someone asks to put usage, rate limits, quota, the weekly limit, the Fable limit, or credit spend in their status line, asks why their status line shows no usage or is missing the Fable or credits segment, or wants the numbers from /usage visible without opening /usage.
+description: Show Claude Code plan usage in the status line - the 5-hour session window, the weekly all-models window, each per-model weekly window (Fable, Opus, Sonnet), and the usage-credit balance, plus how long until the 5-hour window resets - each coloured green, amber or red by how close it is to its limit. Use when someone asks to put usage, rate limits, quota, the weekly limit, the Fable limit, or credit spend in their status line, asks why their status line shows no usage or is missing the Fable or credits segment, wants to know when the 5-hour window resets, or wants the numbers from /usage visible without opening /usage.
 ---
 
 # Usage limits in the status line
@@ -8,17 +8,19 @@ description: Show Claude Code plan usage in the status line - the 5-hour session
 Adds a line like this under the normal status line:
 
 ```
-5h:82% | 7d:41% | fable:57% | credits:25%
+5h:82% (1h12m) | 7d:41% | fable:57% | credits:25%
 ```
 
-Green below 70%, amber 70-89%, red 90% and above.
+Green below 70%, amber 70-89%, red 90% and above. The time beside the 5-hour
+window is how long until it resets, and it appears only once a fetch has landed
+- Claude Code's own payload carries percentages with no reset time.
 
 ## Why this needs its own fetch
 
 Claude Code hands the status line a `rate_limits` object holding only
 `five_hour`, `seven_day`, and a `spend_limit` that appears solely for gateway
-users. The per-model weekly windows and the credit balance are never in it, so
-they are read from `/api/oauth/usage` instead. `references/endpoint.md` records
+users. The per-model weekly windows, the credit balance and every reset time are
+never in it, so they are read from `/api/oauth/usage` instead. `references/endpoint.md` records
 the response shape and the field-to-segment mapping.
 
 The status line reads a cache and never calls the network, so the fetch cannot
@@ -83,3 +85,6 @@ bash scripts/usage-refresh.sh && jq . ~/.claude/cache/usage.json
 - **No per-model segment** - that account has no `weekly_scoped` entry in
   `limits[]`. Compare against `/usage`, which reads the same endpoint.
 - **Numbers behind `/usage`** - expected, up to `USAGE_LIMITS_TTL` seconds.
+- **No countdown beside `5h`** - either no fetch has landed yet, or the cached
+  `resets_at` is already in the past, which means the fetch is failing. The
+  foreground run above shows which.
