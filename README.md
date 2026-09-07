@@ -4,7 +4,8 @@ Skills for [Claude Code](https://claude.com/claude-code).
 
 | Skill | What it does |
 | --- | --- |
-| [statusline-usage-limits](plugins/statusline-usage-limits) | Puts your plan usage in the status line: the 5-hour window, the weekly window, each per-model weekly window, and your usage-credit balance — coloured by how close each is to its limit. |
+| [statusline-usage-limits](plugins/lorem-foo-skills/skills/statusline-usage-limits) | Puts your plan usage in the status line: the 5-hour window, the weekly window, each per-model weekly window, and your usage-credit balance — coloured by how close each is to its limit. |
+| [quota-guarded-stages](plugins/lorem-foo-skills/skills/quota-guarded-stages) | Runs a queue of expensive stages (plugin evals, batch jobs) with a guard in front of each: pauses when the 5-hour window is nearly full and resumes after it resets, stops when a weekly window crosses its threshold, and continues an interrupted queue where it left off. |
 
 ## Install
 
@@ -135,3 +136,24 @@ The response shape and the field-to-segment mapping are in
 ## Licence
 
 MIT
+
+---
+
+## quota-guarded-stages
+
+For work that is too token-hungry to run in one go. Put the stages in a queue
+file, one shell command per line, and start it detached:
+
+```bash
+S=~/.claude/plugins/cache/loremfoobar-skills/lorem-foo-skills/*/skills/quota-guarded-stages/scripts
+nohup $S/run-queue.sh work.queue > work.log 2>&1 &
+```
+
+Before each stage the guard reads the same endpoint `/usage` reads. Defaults:
+pause at 90% of the 5-hour window and resume when it is back at 5% or below,
+re-checking every 30 minutes; stop for good at 85% of the weekly or any
+per-model window. Finished stages are recorded in `work.queue.done`, so running
+the same command again continues from the first unfinished stage. Thresholds
+are environment variables (`QUOTA_PAUSE_5H`, `QUOTA_RESUME_5H`,
+`QUOTA_STOP_WEEKLY`, `QUOTA_CHECK_INTERVAL`, `QUOTA_MODEL`); the skill's
+`SKILL.md` lists them and tells Claude how to size stages and report progress.

@@ -1,12 +1,21 @@
 {
   "name": "lorem-foo-skills",
-  "description": "Show plan usage in the Claude Code status line: the 5-hour window, the weekly window, each per-model weekly window, and the usage-credit balance, coloured by how close each is to its limit.",
-  "version": "1.0.1",
+  "description": "Plan-usage tools for Claude Code: show the 5-hour, weekly, per-model and credit windows in the status line, and run long token-hungry work in stages that pause and stop by those same limits.",
+  "version": "1.1.0",
   "author": {
     "name": "Amit Edelshtein",
     "url": "https://github.com/LoremFooBar"
   },
   "homepage": "https://github.com/LoremFooBar/skills",
   "license": "MIT",
-  "keywords": ["statusline", "usage", "rate-limits", "quota", "credits"]
+  "keywords": [
+    "batch",
+    "budget",
+    "credits",
+    "eval",
+    "quota",
+    "rate-limits",
+    "statusline",
+    "usage"
+  ]
 }
