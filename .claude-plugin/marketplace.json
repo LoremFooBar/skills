@@ -12,6 +12,12 @@
       "description": "Plan-usage tools for Claude Code: show the 5-hour, weekly, per-model and credit windows in the status line, and run long token-hungry work in stages that pause and stop by those same limits.",
       "source": "./plugins/lorem-foo-skills",
       "category": "productivity"
+    },
+    {
+      "name": "writing-skills",
+      "description": "Writing for readers who were not there: state-not-history turns working notes into a page that states the current position, cost and ask; design-review-page builds a 5-minute review page, detail subpages and an 8-slide deck for a time-boxed design review.",
+      "source": "./plugins/writing-skills",
+      "category": "productivity"
     }
   ]
 }

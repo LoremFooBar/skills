@@ -6,12 +6,15 @@ Skills for [Claude Code](https://claude.com/claude-code).
 | --- | --- |
 | [statusline-usage-limits](plugins/lorem-foo-skills/skills/statusline-usage-limits) | Puts your plan usage in the status line: the 5-hour window, the weekly window, each per-model weekly window, and your usage-credit balance — coloured by how close each is to its limit. |
 | [quota-guarded-stages](plugins/lorem-foo-skills/skills/quota-guarded-stages) | Runs a queue of expensive stages (plugin evals, batch jobs) with a guard in front of each: pauses when the 5-hour window is nearly full and resumes after it resets, stops when a weekly window crosses its threshold, and continues an interrupted queue where it left off. |
+| [state-not-history](plugins/writing-skills/skills/state-not-history) | Writing rules for a reader who was not there while the work happened: state the current position, cost and ask; move history, provenance and cross-references out of the body. Applies to any doc, PR description or update meant for other people. |
+| [design-review-page](plugins/writing-skills/skills/design-review-page) | Builds a design review for a time-boxed meeting: a main page readable in about 5 minutes with 2 or 3 decisions and a stated recommendation, detail subpages, and an 8-slide deck. Asks who is in the room, which decisions get time, and your position, then writes. |
 
 ## Install
 
 ```
 /plugin marketplace add LoremFooBar/skills
 /plugin install statusline-usage-limits@loremfoobar-skills
+/plugin install writing-skills@loremfoobar-skills
 ```
 
 Then follow the skill's own setup step — for `statusline-usage-limits`, ask

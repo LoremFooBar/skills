@@ -1,0 +1,18 @@
+{
+  "name": "writing-skills",
+  "description": "Writing for readers who were not there: state-not-history turns working notes into a page that states the current position, cost and ask; design-review-page builds a 5-minute review page, detail subpages and an 8-slide deck for a time-boxed design review.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Amit Edelshtein",
+    "url": "https://github.com/LoremFooBar"
+  },
+  "homepage": "https://github.com/LoremFooBar/skills",
+  "license": "MIT",
+  "keywords": [
+    "design-review",
+    "documentation",
+    "notion",
+    "plain-english",
+    "technical-writing"
+  ]
+}
