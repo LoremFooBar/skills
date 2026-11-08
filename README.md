@@ -6,6 +6,7 @@ Skills for [Claude Code](https://claude.com/claude-code).
 | --- | --- |
 | [statusline-usage-limits](plugins/lorem-foo-skills/skills/statusline-usage-limits) | Puts your plan usage in the status line: the 5-hour window, the weekly window, each per-model weekly window, and your usage-credit balance — coloured by how close each is to its limit. |
 | [quota-guarded-stages](plugins/lorem-foo-skills/skills/quota-guarded-stages) | Runs a queue of expensive stages (plugin evals, batch jobs) with a guard in front of each: pauses when the 5-hour window is nearly full and resumes after it resets, stops when a weekly window crosses its threshold, and continues an interrupted queue where it left off. |
+| [restart](plugins/lorem-foo-skills/skills/restart) | Restarts Claude Code sessions that run in cmux tabs onto the newly installed version, and resumes each one in the same tab with the same session and flags. Skips busy sessions and restarts its own session last. |
 
 ## Install
 
@@ -157,3 +158,31 @@ the same command again continues from the first unfinished stage. Thresholds
 are environment variables (`QUOTA_PAUSE_5H`, `QUOTA_RESUME_5H`,
 `QUOTA_STOP_WEEKLY`, `QUOTA_CHECK_INTERVAL`, `QUOTA_MODEL`); the skill's
 `SKILL.md` lists them and tells Claude how to size stages and report progress.
+
+---
+
+## restart
+
+After Claude Code updates, sessions that are already open keep running the old
+version. In cmux, `claude-restart` stops each idle session that runs an older
+version and types the resume command back into the same tab, so the session
+comes back with the same id and the same flags (for example
+`--permission-mode auto`).
+
+Link the script onto PATH once. The marketplace clone path stays the same
+across plugin versions:
+
+```bash
+ln -sf ~/.claude/plugins/marketplaces/loremfoobar-skills/plugins/lorem-foo-skills/skills/restart/scripts/claude-restart ~/.local/bin/claude-restart
+```
+
+Then:
+
+```bash
+claude-restart --dry-run   # list what would restart
+claude-restart             # restart idle sessions on an older version
+claude-restart --self      # restart only this session, after its turn ends
+```
+
+Requires cmux, `jq`, `perl`, and Claude Code from the native installer
+(`~/.local/bin/claude`). The skill's `SKILL.md` lists the other flags.
