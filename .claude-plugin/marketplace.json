@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "lorem-foo-skills",
-      "description": "Plan-usage tools for Claude Code: show the 5-hour, weekly, per-model and credit windows in the status line, and run long token-hungry work in stages that pause and stop by those same limits.",
+      "description": "Plan-usage tools for Claude Code: show the 5-hour, weekly, per-model and credit windows in the status line, run long token-hungry work in stages that pause and stop by those same limits, and restart Claude Code sessions in cmux tabs onto a newly installed version.",
       "source": "./plugins/lorem-foo-skills",
       "category": "productivity"
     }

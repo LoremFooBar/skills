@@ -1,0 +1,162 @@
+#!/usr/bin/env bash
+# Restart Claude Code sessions running in cmux tabs so they pick up the installed
+# version, then resume each session in the same tab with its original flags.
+#
+# Usage: claude-restart [--self] [--dry-run] [--all-versions] [--include-busy] [--surface <uuid>]
+#   (default)       restart every idle session in cmux that runs an older version
+#   --self          restart only the session that runs this command, after its turn ends
+#   --dry-run       print what would happen
+#   --all-versions  also restart sessions already on the installed version
+#   --include-busy  also restart sessions in the middle of a turn (the turn is lost)
+#   --surface       only the cmux tab with this surface UUID
+set -euo pipefail
+
+self=0
+dry_run=0
+all_versions=0
+include_busy=0
+only_surface=""
+while [[ "${CLAUDE_RESTART_DETACHED:-}" != 1 && $# -gt 0 ]]; do
+  case "$1" in
+    --self) self=1 ;;
+    --dry-run) dry_run=1 ;;
+    --all-versions) all_versions=1 ;;
+    --include-busy) include_busy=1 ;;
+    --surface) only_surface="$2"; shift ;;
+    -h|--help) sed -n '2,11p' "$0"; exit 0 ;;
+    *) echo "unknown option: $1" >&2; exit 2 ;;
+  esac
+  shift
+done
+
+export CMUX_QUIET=1
+sessions_dir="$HOME/.claude/sessions"
+installed_version="$(basename "$(readlink "$HOME/.local/bin/claude")")"
+
+# cmux does not report a tty for every tab, so the tab comes from the env cmux gave the process.
+env_var() {
+  ps eww -o command= -p "$1" 2>/dev/null | tr ' ' '\n' | sed -n "s/^$2=//p" | head -1
+}
+
+wait_for_exit() {
+  local pid="$1" i
+  for i in $(seq 1 60); do
+    kill -0 "$pid" 2>/dev/null || return 0
+    sleep 0.25
+  done
+  return 1
+}
+
+own_claude_pid() {
+  local pid=$$
+  while [[ "$pid" -gt 1 ]]; do
+    pid="$(ps -o ppid= -p "$pid" | tr -d ' ')"
+    [[ -f "$sessions_dir/$pid.json" ]] && { echo "$pid"; return 0; }
+  done
+  return 1
+}
+
+resume_command() {
+  local session_file="$1" binding="$2" session_id checkpoint cmd
+  session_id="$(jq -r .sessionId "$session_file")"
+  checkpoint="$(jq -r '.resume_binding.checkpoint_id // empty' <<<"$binding")"
+  cmd="$(jq -r '.resume_binding.command // empty' <<<"$binding")"
+  if [[ -z "$cmd" || -z "$checkpoint" ]]; then
+    printf 'cd %q && claude --resume %s\n' "$(jq -r .cwd "$session_file")" "$session_id"
+  else
+    # /clear and /resume switch to a new session id that cmux may not have recorded yet.
+    echo "${cmd//$checkpoint/$session_id}"
+  fi
+}
+
+# Typing /exit is unsafe: Ctrl+C does not clear a draft, so the draft plus "/exit" gets submitted.
+restart() {
+  local pid="$1" surface="$2" cmd="$3"
+  kill -TERM "$pid"
+  wait_for_exit "$pid" || { echo "        FAILED: pid $pid still running after 15s"; return 1; }
+  sleep 0.5
+  cmux send --surface "$surface" "$cmd" >/dev/null
+  cmux send-key --surface "$surface" enter >/dev/null
+}
+
+if [[ "${CLAUDE_RESTART_DETACHED:-}" == 1 ]]; then
+  pid="$1" surface="$2"
+  session_file="$sessions_dir/$pid.json"
+  # The session is busy until the turn that ran --self ends; killing it earlier cuts off the reply.
+  sleep 2
+  for _ in $(seq 1 600); do
+    kill -0 "$pid" 2>/dev/null || exit 0
+    [[ "$(jq -r .status "$session_file")" == idle ]] && break
+    sleep 0.5
+  done
+  [[ "$(jq -r .status "$session_file")" == idle ]] || { echo "session still busy after 5 min; not restarting"; exit 1; }
+  binding="$(cmux surface resume show --json --surface "$surface")"
+  restart "$pid" "$surface" "$(resume_command "$session_file" "$binding")"
+  exit $?
+fi
+
+schedule_self_restart() {
+  local pid="$1" surface="$2" log
+  log="${TMPDIR:-/tmp}/claude-restart-$pid.log"
+  if [[ $dry_run -eq 1 ]]; then
+    echo "would restart this session (pid $pid) after the current turn ends"; return 0
+  fi
+  # setsid takes the helper out of the session's process group so it survives the SIGTERM.
+  CLAUDE_RESTART_DETACHED=1 nohup perl -MPOSIX -e 'POSIX::setsid(); exec @ARGV' \
+    "$0" "$pid" "$surface" >"$log" 2>&1 </dev/null &
+  echo "this session (pid $pid) restarts when the current turn ends; log: $log"
+}
+
+if [[ $self -eq 1 ]]; then
+  pid="$(own_claude_pid)" || { echo "not running inside a Claude Code session" >&2; exit 1; }
+  surface="$(env_var "$pid" CMUX_SURFACE_ID)"
+  [[ -n "$surface" ]] || { echo "this Claude Code session is not in a cmux tab" >&2; exit 1; }
+  schedule_self_restart "$pid" "$surface"
+  exit 0
+fi
+
+echo "installed claude: $installed_version"
+self_pid="$(own_claude_pid || true)"
+self_surface=""
+restarted=0 skipped=0 failed=0
+for session_file in "$sessions_dir"/*.json; do
+  pid="$(jq -r .pid "$session_file")"
+  kill -0 "$pid" 2>/dev/null || continue
+  [[ "$(jq -r .kind "$session_file")" == "interactive" ]] || continue
+
+  surface="$(env_var "$pid" CMUX_SURFACE_ID)"
+  [[ -z "$surface" ]] && continue
+  [[ -n "$only_surface" && "$surface" != "$only_surface" ]] && continue
+
+  session_id="$(jq -r .sessionId "$session_file")"
+  status="$(jq -r .status "$session_file")"
+  version="$(jq -r .version "$session_file")"
+  binding="$(cmux surface resume show --json --surface "$surface" 2>/dev/null || true)"
+  surface_ref="$(jq -r '.surface_ref // empty' <<<"$binding" 2>/dev/null || true)"
+  if [[ -z "$surface_ref" ]]; then
+    echo "skip  pid $pid: tab $surface not found in cmux"; skipped=$((skipped+1)); continue
+  fi
+  title="$(cmux tree --all --json | jq -r --arg s "$surface_ref" \
+    '[.windows[].workspaces[] | .ref as $w | .panes[].surfaces[] | select(.ref == $s) | "\($w) \(.ref) \(.title)"][0] // $s')"
+
+  if [[ $all_versions -eq 0 && "$version" == "$installed_version" ]]; then
+    echo "skip  $title: already on $version"; skipped=$((skipped+1)); continue
+  fi
+  if [[ "$pid" == "$self_pid" ]]; then
+    self_surface="$surface"; continue
+  fi
+  if [[ $include_busy -eq 0 && "$status" != "idle" ]]; then
+    echo "skip  $title: status is '$status'"; skipped=$((skipped+1)); continue
+  fi
+
+  cmd="$(resume_command "$session_file" "$binding")"
+  echo "restart $title: $version -> $installed_version, session $session_id"
+  if [[ $dry_run -eq 1 ]]; then
+    echo "        would run: $cmd"; continue
+  fi
+  if restart "$pid" "$surface" "$cmd"; then restarted=$((restarted+1)); else failed=$((failed+1)); fi
+done
+
+echo "restarted=$restarted skipped=$skipped failed=$failed"
+[[ -n "$self_surface" ]] && schedule_self_restart "$self_pid" "$self_surface"
+exit 0

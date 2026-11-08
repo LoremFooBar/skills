@@ -1,7 +1,7 @@
 {
   "name": "lorem-foo-skills",
-  "description": "Plan-usage tools for Claude Code: show the 5-hour, weekly, per-model and credit windows in the status line, and run long token-hungry work in stages that pause and stop by those same limits.",
-  "version": "1.2.0",
+  "description": "Plan-usage tools for Claude Code: show the 5-hour, weekly, per-model and credit windows in the status line, run long token-hungry work in stages that pause and stop by those same limits, and restart Claude Code sessions in cmux tabs onto a newly installed version.",
+  "version": "1.3.0",
   "author": {
     "name": "Amit Edelshtein",
     "url": "https://github.com/LoremFooBar"
@@ -11,10 +11,12 @@
   "keywords": [
     "batch",
     "budget",
+    "cmux",
     "credits",
     "eval",
     "quota",
     "rate-limits",
+    "restart",
     "statusline",
     "usage"
   ]
