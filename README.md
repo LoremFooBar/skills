@@ -7,6 +7,7 @@ Skills for [Claude Code](https://claude.com/claude-code).
 | [statusline-usage-limits](plugins/lorem-foo-skills/skills/statusline-usage-limits) | Puts your plan usage in the status line: the 5-hour window, the weekly window, each per-model weekly window, and your usage-credit balance — coloured by how close each is to its limit. |
 | [quota-guarded-stages](plugins/lorem-foo-skills/skills/quota-guarded-stages) | Runs a queue of expensive stages (plugin evals, batch jobs) with a guard in front of each: pauses when the 5-hour window is nearly full and resumes after it resets, stops when a weekly window crosses its threshold, and continues an interrupted queue where it left off. |
 | [restart](plugins/lorem-foo-skills/skills/restart) | Restarts Claude Code sessions that run in cmux tabs onto the newly installed version, and resumes each one in the same tab with the same session and flags. Skips busy sessions and restarts its own session last. |
+| [restore-cmux-claude-sessions](plugins/lorem-foo-skills/skills/restore-cmux-claude-sessions) | After a crash, a reboot, or a quit where cmux did not resume its tabs, finds the Claude session each tab had and resumes it in the same tab, one tab at a time. Shows the plan first and skips tabs that are busy or already running their session. |
 
 ## Install
 
@@ -186,3 +187,26 @@ claude-restart --self      # restart only this session, after its turn ends
 
 Requires cmux, `jq`, `perl`, and Claude Code from the native installer
 (`~/.local/bin/claude`). The skill's `SKILL.md` lists the other flags.
+
+---
+
+## restore-cmux-claude-sessions
+
+cmux saves the Claude session of each tab and resumes it when cmux starts again.
+After a crash, a forced quit, or a reboot, it restores the tabs as plain shells
+instead, and its "Restore agent sessions?" dialog opens the sessions in new
+workspaces, not in the original tabs. This skill reads the state cmux saved
+before it started and types `claude --resume <id>` back into each tab, with the
+tab's original flags (for example `--permission-mode auto`). Tabs are resumed 3
+seconds apart, to keep the load low right after a boot.
+
+Ask Claude to "restore my Claude sessions in cmux", or run the script:
+
+```bash
+S=~/.claude/plugins/marketplaces/loremfoobar-skills/plugins/lorem-foo-skills/skills/restore-cmux-claude-sessions/scripts
+python3 -I $S/restore.py           # dry run: list what would resume
+python3 -I $S/restore.py --apply   # resume the tabs
+```
+
+A session that you exited before the crash is not resumed: cmux drops a tab's
+session when Claude exits normally. Requires macOS, cmux, and Python 3.
